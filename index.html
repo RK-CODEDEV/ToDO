@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TASKS — Do What Matters</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --surface: #161616;
+      --surface2: #1e1e1e;
+      --border: #2a2a2a;
+      --accent: #c8f135;
+      --text: #f0ede6;
+      --text-muted: #6b6b6b;
+      --text-subtle: #3d3d3d;
+      --danger: #ff4d4d;
+      --done-text: #404040;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px;
+      opacity: 0.3;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 60px 24px 100px;
+    }
+
+    header { margin-bottom: 48px; animation: fadeDown 0.6s ease both; }
+
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 28px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(48px, 9vw, 80px);
+      font-weight: 800;
+      line-height: 0.92;
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+
+    h1 span { color: var(--accent); }
+
+    .header-meta { margin-top: 20px; }
+
+    .task-count {
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    .task-count strong { color: var(--accent); font-weight: 500; }
+
+    .filters { display: flex; gap: 2px; margin-top: 10px; }
+
+    .filter-btn {
+      background: none;
+      border: none;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 6px 14px;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover { color: var(--text); }
+    .filter-btn.active { background: var(--surface2); color: var(--accent); border: 1px solid var(--border); }
+
+    /* Progress */
+    .progress-wrap { margin-bottom: 32px; animation: fadeDown 0.6s 0.1s ease both; }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .progress-track { height: 3px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 0%;
+    }
+
+    /* Input */
+    .input-area { margin-bottom: 40px; animation: fadeDown 0.6s 0.15s ease both; }
+
+    .input-wrap {
+      display: flex;
+      align-items: stretch;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .input-wrap:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(200, 241, 53, 0.08);
+    }
+
+    .input-prefix {
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      color: var(--accent);
+      font-size: 20px;
+      border-right: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    #task-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 16px 18px;
+      font-family: 'DM Mono', monospace;
+      font-size: 14px;
+      color: var(--text);
+      caret-color: var(--accent);
+    }
+
+    #task-input::placeholder { color: var(--text-subtle); }
+
+    .add-btn {
+      background: var(--accent);
+      color: #0d0d0d;
+      border: none;
+      padding: 0 24px;
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      flex-shrink: 0;
+    }
+
+    .add-btn:hover { background: #d4f54a; }
+    .add-btn:active { transform: scale(0.97); }
+
+    .category-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .cat-label { font-size: 11px; color: var(--text-subtle); letter-spacing: 0.1em; text-transform: uppercase; }
+
+    .cat-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 4px 12px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.05em;
+    }
+
+    .cat-btn:hover { border-color: var(--text-muted); color: var(--text); }
+    .cat-btn.selected { border-color: var(--accent); color: var(--accent); background: rgba(200,241,53,0.05); }
+
+    /* List */
+    .section-label {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-subtle);
+      margin-bottom: 12px;
+      padding-left: 2px;
+    }
+
+    #task-list { list-style: none; display: flex; flex-direction: column; gap: 3px; }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 16px;
+      transition: border-color 0.15s, transform 0.15s, opacity 0.2s;
+      animation: slideIn 0.25s ease both;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .task-item::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--cat-color, var(--border));
+    }
+
+    .task-item:hover { border-color: #3a3a3a; transform: translateX(2px); }
+    .task-item.completed { opacity: 0.45; }
+    .task-item.completed:hover { opacity: 0.6; }
+
+    .checkbox {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .checkbox:hover { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,241,53,0.1); }
+
+    .task-item.completed .checkbox { background: var(--accent); border-color: var(--accent); }
+
+    .checkmark {
+      width: 8px;
+      height: 5px;
+      border-left: 1.5px solid #0d0d0d;
+      border-bottom: 1.5px solid #0d0d0d;
+      transform: rotate(-45deg) translateY(-1px);
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .task-item.completed .checkmark { opacity: 1; }
+
+    .task-content { flex: 1; min-width: 0; }
+
+    .task-text {
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .task-item.completed .task-text {
+      color: var(--done-text);
+      text-decoration: line-through;
+      text-decoration-color: var(--text-subtle);
+    }
+
+    .task-meta { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+
+    .task-cat {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.04);
+      color: var(--cat-color, var(--text-muted));
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .task-time { font-size: 10px; color: var(--text-subtle); }
+
+    .task-actions {
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .task-item:hover .task-actions { opacity: 1; }
+
+    .action-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .action-btn:hover { border-color: var(--text-muted); color: var(--text); background: var(--surface2); }
+    .action-btn.del:hover { border-color: var(--danger); color: var(--danger); background: rgba(255,77,77,0.08); }
+
+    .edit-input {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--accent);
+      outline: none;
+      font-family: 'DM Mono', monospace;
+      font-size: 14px;
+      color: var(--text);
+      width: 100%;
+      padding: 2px 0;
+      caret-color: var(--accent);
+    }
+
+    .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-subtle);
+      animation: fadeIn 0.4s ease both;
+    }
+
+    .empty-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.4; }
+    .empty p { font-size: 13px; letter-spacing: 0.05em; }
+
+    .app-footer {
+      margin-top: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .footer-stat { font-size: 11px; color: var(--text-subtle); letter-spacing: 0.05em; }
+
+    .clear-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 6px 14px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      text-transform: uppercase;
+    }
+
+    .clear-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    @media (max-width: 480px) {
+      .wrapper { padding: 36px 16px 80px; }
+      h1 { font-size: 44px; }
+      .task-actions { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="eyebrow">Task Manager</div>
+    <h1>GET<br><span>THINGS</span><br>DONE.</h1>
+    <div class="header-meta">
+      <div class="task-count" id="task-count"><strong>0</strong> tasks remaining</div>
+      <div class="filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="active">Active</button>
+        <button class="filter-btn" data-filter="done">Done</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span>Progress</span>
+      <span id="progress-pct">0%</span>
+    </div>
+    <div class="progress-track"><div class="progress-bar" id="progress-bar"></div></div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-wrap">
+      <div class="input-prefix">+</div>
+      <input type="text" id="task-input" placeholder="What needs to be done?" autocomplete="off" />
+      <button class="add-btn" id="add-btn">Add</button>
+    </div>
+    <div class="category-row">
+      <span class="cat-label">Label:</span>
+      <button class="cat-btn selected" data-cat="none" data-color="#6b6b6b">None</button>
+      <button class="cat-btn" data-cat="work" data-color="#c8f135">Work</button>
+      <button class="cat-btn" data-cat="personal" data-color="#4db8ff">Personal</button>
+      <button class="cat-btn" data-cat="urgent" data-color="#ff4d4d">Urgent</button>
+      <button class="cat-btn" data-cat="idea" data-color="#ffa84d">Idea</button>
+    </div>
+  </div>
+
+  <div class="section-label" id="list-label">— Active tasks</div>
+  <ul id="task-list"></ul>
+
+  <div class="app-footer">
+    <span class="footer-stat" id="footer-stat">0 completed</span>
+    <button class="clear-btn" id="clear-btn">Clear completed</button>
+  </div>
+
+</div>
+<script>
+  const CAT_COLORS = { none:'#6b6b6b', work:'#c8f135', personal:'#4db8ff', urgent:'#ff4d4d', idea:'#ffa84d' };
+  let tasks = JSON.parse(localStorage.getItem('gtd_tasks') || '[]');
+  let filter = 'all';
+  let selCat = 'none';
+  let nextId = parseInt(localStorage.getItem('gtd_nid') || '1');
+
+  const inp = document.getElementById('task-input');
+  const list = document.getElementById('task-list');
+
+  document.querySelectorAll('.cat-btn').forEach(b => b.addEventListener('click', () => {
+    selCat = b.dataset.cat;
+    document.querySelectorAll('.cat-btn').forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected');
+  }));
+
+  document.querySelectorAll('.filter-btn').forEach(b => b.addEventListener('click', () => {
+    filter = b.dataset.filter;
+    document.querySelectorAll('.filter-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    render();
+  }));
+
+  function addTask() {
+    const text = inp.value.trim();
+    if (!text) { inp.focus(); return; }
+    tasks.push({ id: nextId++, text, completed: false, cat: selCat, ts: Date.now() });
+    inp.value = '';
+    save(); render();
+  }
+
+  document.getElementById('add-btn').addEventListener('click', addTask);
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    tasks = tasks.filter(t => !t.completed); save(); render();
+  });
+
+  function toggle(id) {
+    const t = tasks.find(t => t.id === id);
+    if (t) t.completed = !t.completed;
+    save(); render();
+  }
+
+  function remove(id) { tasks = tasks.filter(t => t.id !== id); save(); render(); }
+
+  function startEdit(id, el) {
+    const t = tasks.find(t => t.id === id); if (!t) return;
+    const i = document.createElement('input');
+    i.className = 'edit-input'; i.value = t.text;
+    el.innerHTML = ''; el.appendChild(i); i.focus(); i.select();
+    function commit() { const v = i.value.trim(); if (v) t.text = v; save(); render(); }
+    i.addEventListener('keydown', e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') render(); });
+    i.addEventListener('blur', commit);
+  }
+
+  function timeAgo(ts) {
+    const d = Math.floor((Date.now() - ts) / 1000);
+    if (d < 60) return 'just now';
+    if (d < 3600) return Math.floor(d/60) + 'm ago';
+    if (d < 86400) return Math.floor(d/3600) + 'h ago';
+    return Math.floor(d/86400) + 'd ago';
+  }
+
+  function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function save() {
+    localStorage.setItem('gtd_tasks', JSON.stringify(tasks));
+    localStorage.setItem('gtd_nid', nextId);
+  }
+
+  function render() {
+    const total = tasks.length, done = tasks.filter(t => t.completed).length;
+    const rem = total - done, pct = total ? Math.round(done/total*100) : 0;
+    document.getElementById('task-count').innerHTML = `<strong>${rem}</strong> task${rem!==1?'s':''} remaining`;
+    document.getElementById('progress-bar').style.width = pct + '%';
+    document.getElementById('progress-pct').textContent = pct + '%';
+    document.getElementById('footer-stat').textContent = done + ' completed';
+
+    const visible = tasks.filter(t => filter==='active'?!t.completed:filter==='done'?t.completed:true);
+    const lbl = document.getElementById('list-label');
+    lbl.textContent = filter==='all'?'— All tasks':filter==='active'?'— Active tasks':'— Completed tasks';
+
+    if (!visible.length) {
+      list.innerHTML = `<div class="empty"><div class="empty-icon">◎</div><p>${filter==='done'?'Nothing completed yet.':'No tasks here. Add one above!'}</p></div>`;
+      return;
+    }
+
+    list.innerHTML = '';
+    visible.forEach((t, i) => {
+      const color = CAT_COLORS[t.cat] || CAT_COLORS.none;
+      const li = document.createElement('li');
+      li.className = 'task-item' + (t.completed?' completed':'');
+      li.style.cssText = `--cat-color:${color};animation-delay:${i*0.03}s`;
+      li.innerHTML = `
+        <div class="checkbox" data-id="${t.id}"><div class="checkmark"></div></div>
+        <div class="task-content">
+          <div class="task-text" data-id="${t.id}">${esc(t.text)}</div>
+          <div class="task-meta">
+            ${t.cat!=='none'?`<span class="task-cat">${t.cat}</span>`:''}
+            <span class="task-time">${timeAgo(t.ts)}</span>
+          </div>
+        </div>
+        <div class="task-actions">
+          <button class="action-btn edit-btn" data-id="${t.id}" title="Edit">✎</button>
+          <button class="action-btn del" data-id="${t.id}" title="Delete">✕</button>
+        </div>`;
+      list.appendChild(li);
+    });
+
+    list.querySelectorAll('.checkbox').forEach(el => el.addEventListener('click', () => toggle(+el.dataset.id)));
+    list.querySelectorAll('.edit-btn').forEach(el => el.addEventListener('click', () => {
+      startEdit(+el.dataset.id, list.querySelector(`.task-text[data-id="${el.dataset.id}"]`));
+    }));
+    list.querySelectorAll('.action-btn.del').forEach(el => el.addEventListener('click', () => remove(+el.dataset.id)));
+  }
+
+  render();
+</script>
+</body>
+</html>
